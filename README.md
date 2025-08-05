@@ -1,16 +1,30 @@
-## Hi there 👋
+# Hi, I’m Hamzah 👋
 
-<!--
-**yoshimoriryu/yoshimoriryu** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+I’m a backend software engineer from Indonesia, passionate about building clean, scalable, and reliable systems. I enjoy working with Python, diving into distributed systems, and contributing to tools that solve real-world problems.
 
-Here are some ideas to get you started:
+## 💻 Tech Stack
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+- **Languages:** Python, JavaScript, C++, Java, PHP, SQL
+- **Frameworks & Tools:** FastAPI, Flask, Docker, Celery, Redis, PostgreSQL, GitHub Actions
+- **Others:** GCP (Cloud Run, VMs), REST APIs, CI/CD, system design, async task queues
+
+## 🚀 Interests
+
+- System performance optimization  
+- AI / ML backend infrastructure  
+- Cloud-native apps & deployment  
+- Clean code, testing, and architecture
+
+## 🎓 A Little Background
+
+Graduated in Computer Science from ITB — took the scenic route, but came out stronger for it.  
+I value depth over speed and focus on building things that are clean, maintainable, and actually useful.
+
+## 📫 Get in Touch
+
+- Email: hamzah.chairil98@gmail.com  
+- LinkedIn: [linkedin.com/in/yourusername](https://www.linkedin.com/in/yourusername)  
+- GitHub: [github.com/yourusername](https://github.com/yourusername)  
+- LeetCode: [leetcode.com/yourusername](https://leetcode.com/yourusername)
+
+Thanks for stopping by!
