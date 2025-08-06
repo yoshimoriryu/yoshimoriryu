@@ -23,8 +23,8 @@ I value depth over speed and focus on building things that are clean, maintainab
 ## 📫 Get in Touch
 
 - Email: hamzah.chairil98@gmail.com  
-- LinkedIn: [linkedin.com/in/yourusername](https://www.linkedin.com/in/hamzah-chairil-salim)  
-- GitHub: [github.com/yourusername](https://github.com/yoshimoriryu)  
-- LeetCode: [leetcode.com/yourusername](https://leetcode.com/yoshimoriryu)
+- LinkedIn: [linkedin.com/in/hamzah-chairil-salim](https://www.linkedin.com/in/hamzah-chairil-salim)  
+- GitHub: [github.com/yoshimoriryu](https://github.com/yoshimoriryu)  
+- LeetCode: [leetcode.com/yoshimoriryu](https://leetcode.com/yoshimoriryu)
 
 Thanks for stopping by!
