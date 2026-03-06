@@ -4,7 +4,7 @@ I’m a backend software engineer from Indonesia, passionate about building clea
 
 ## 💻 Tech Stack
 
-- **Languages:** Python, JavaScript, C++, Java, PHP, SQL
+- **Languages:** Python, JavaScript, PHP, SQL
 - **Frameworks & Tools:** FastAPI, Flask, Docker, Celery, Redis, PostgreSQL, GitHub Actions
 - **Others:** GCP (Cloud Run, VMs), REST APIs, CI/CD, system design, async task queues
 
@@ -17,7 +17,7 @@ I’m a backend software engineer from Indonesia, passionate about building clea
 
 ## 🎓 A Little Background
 
-Graduated in Computer Science from ITB — took the scenic route, but came out stronger for it.  
+Graduated in Computer Science from Institut Teknologi Bandung — took the scenic route, but came out stronger for it.  
 I value depth over speed and focus on building things that are clean, maintainable, and actually useful.
 
 ## 📫 Get in Touch
