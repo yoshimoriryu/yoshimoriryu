@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Render assets/banner.gif for the profile README.
+"""Render the two README animations.
 
-The light bulb critter from yoshimoriryu/nudge-lamp types `git push`, then
-walks under each pipeline stage and lights it up until production goes green.
-The sprite follows CritterRenderer.swift in that repo pixel for pixel.
+assets/banner.gif  The light bulb critter from yoshimoriryu/nudge-lamp types
+                   `git push`, then walks under each pipeline stage and lights
+                   it up until production goes green.
+assets/footer.gif  The critter strolls in along the bottom of the page, stops
+                   to wave hi, then walks off. Transparent, so it sits on the
+                   page in light and dark themes.
+
+The sprite follows CritterRenderer.swift in nudge-lamp pixel for pixel.
 
 Usage: python3 scripts/banner.py        (needs Pillow)
 """
@@ -13,9 +18,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 SCALE = 4            # screen pixels per sprite pixel
-W, H = 208, 56       # canvas in sprite pixels
 FRAME_MS = 60
-OUT = Path(__file__).resolve().parent.parent / "assets" / "banner.gif"
+ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
 
 def rgb(h):
@@ -28,6 +32,7 @@ def mix(a, b, t):
 
 
 BG = (41, 41, 46)
+KEY = (255, 0, 255)  # transparent colour for the footer
 PANEL = rgb(0x303137)
 TRACK = rgb(0x3A3D44)
 GROUND = rgb(0x45484F)
@@ -43,6 +48,7 @@ MINT = rgb(0xA7F3C4)
 AMBER = rgb(0xFCD34D)
 PENDING_LINE = rgb(0x4A4F57)
 PENDING_TEXT = rgb(0x8C929C)
+MUTED = rgb(0x8C929C)
 
 GLASS = {
     "off": (rgb(0xC9CED6), rgb(0x8E949E)),
@@ -51,9 +57,10 @@ GLASS = {
     "amber": (rgb(0xFCD34D), rgb(0xB45309)),
 }
 
-# 3x5 pixel font, only the glyphs the banner needs.
+# 3x5 pixel font, only the glyphs the animations need.
 FONT = {
     ">": ["#..", ".#.", "..#", ".#.", "#.."],
+    "!": [".#.", ".#.", ".#.", "...", ".#."],
     " ": ["...", "...", "...", "...", "..."],
     "A": [".#.", "#.#", "###", "#.#", "#.#"],
     "B": ["##.", "#.#", "##.", "#.#", "##."],
@@ -80,6 +87,7 @@ class Pose:
     dx: int = 0
     dy: int = 0
     eyes: tuple = ("open", 0, 0)   # ("open", dx, dy) | ("happy",)
+    mouth: bool = False
     left_arm: str = "side"         # side | down | up | forward
     right_arm: str = "side"
     left_foot_up: bool = False
@@ -90,8 +98,9 @@ class Pose:
 
 
 class Canvas:
-    def __init__(self):
-        self.img = Image.new("RGB", (W, H), BG)
+    def __init__(self, w, h, bg):
+        self.bg = bg
+        self.img = Image.new("RGB", (w, h), bg)
         self.d = ImageDraw.Draw(self.img)
 
     def px(self, x, y, w=1, h=1, c=WHITE):
@@ -124,7 +133,7 @@ def draw_critter(cv, p, sx, sy):
     fill, rim = GLASS[p.bulb]
 
     if p.glow:
-        light = mix(BG, fill, 0.55 if p.glow > 1 else 0.3)
+        light = mix(cv.bg, fill, 0.55 if p.glow > 1 else 0.3)
         for x, y, w, h in [(3, -1, 4, 1), (1, 0, 2, 1), (7, 0, 2, 1), (0, 1, 1, 1),
                            (9, 1, 1, 1), (-1, 2, 1, 5), (10, 2, 1, 5), (0, 7, 1, 1),
                            (9, 7, 1, 1), (1, 8, 1, 1), (8, 8, 1, 1)]:
@@ -166,6 +175,8 @@ def draw_critter(cv, p, sx, sy):
             px(x, ey + 1, 1, 1, INK)
             px(x + 1, ey, 1, 1, INK)
             px(x + 2, ey + 1, 1, 1, INK)
+    if p.mouth:
+        px(ox + 4, oy + 7, 2, 1, INK)
 
     if p.sparkle is not None:
         px(sx + 19, sy + 4, 3, 1, YELLOW)
@@ -175,7 +186,7 @@ def draw_critter(cv, p, sx, sy):
             px(sx + 20, sy + 2, 1, 5, YELLOW)
 
 
-def walk_pose(t):
+def walk_pose(t, glow=1):
     phase = (t // 2) % 4
     return Pose(
         dy=-1 if phase % 2 == 0 else 0,
@@ -184,7 +195,7 @@ def walk_pose(t):
         right_arm="down" if phase == 0 else "side",
         left_foot_up=phase == 0,
         right_foot_up=phase == 2,
-        glow=1,
+        glow=glow,
     )
 
 
@@ -215,8 +226,48 @@ def cheer_pose(t):
     )
 
 
-# Scene -----------------------------------------------------------------------
+def wave_pose(t):
+    """Facing the viewer, one arm swinging up and down."""
+    up = (t // 3) % 2 == 0
+    return Pose(
+        dy=-1 if up and (t // 6) % 2 == 0 else 0,
+        eyes=("happy",),
+        mouth=True,
+        left_arm="down",
+        right_arm="up" if up else "side",
+        bulb="amber",
+    )
 
+
+def save_gif(frames, path, transparent=None):
+    """Quantise to one shared palette, scale up, and write a looping GIF."""
+    colours = set()
+    for f in frames:
+        colours.update(c for _, c in f.getcolors(f.width * f.height))
+    colours = sorted(colours)
+    assert len(colours) <= 256, len(colours)
+    pal = Image.new("P", (1, 1))
+    flat = [v for c in colours for v in c]
+    pal.putpalette(flat + [0] * (768 - len(flat)))
+
+    w, h = frames[0].size
+    out = [f.quantize(palette=pal, dither=Image.Dither.NONE)
+             .resize((w * SCALE, h * SCALE), Image.Resampling.NEAREST) for f in frames]
+    extra = {}
+    if transparent is not None:
+        extra = {"transparency": colours.index(transparent), "disposal": 2}
+    else:
+        extra = {"disposal": 1}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    out[0].save(path, save_all=True, append_images=out[1:], duration=FRAME_MS,
+                loop=0, optimize=False, **extra)
+    print(f"{path.name}: {len(out)} frames, {len(colours)} colours, "
+          f"{path.stat().st_size // 1024} KB, {len(out) * FRAME_MS / 1000:.1f} s")
+
+
+# Banner ----------------------------------------------------------------------
+
+W, H = 208, 56
 STAGES = ["BUILD", "TEST", "SCAN", "DEPLOY", "PROD"]
 BOX_W, BOX_H, GAP, BOX_Y = 30, 14, 10, 17
 BOX_X = [9 + i * (BOX_W + GAP) for i in range(len(STAGES))]
@@ -296,8 +347,8 @@ def draw_wire(cv, i, st):
         cv.px(x0 + lit - 1, y - 1, 2, 3, WHITE)   # the packet travelling along
 
 
-def render(st):
-    cv = Canvas()
+def render_banner(st):
+    cv = Canvas(W, H, BG)
 
     # Terminal line, top left.
     cv.text(COMMAND[:1], 9, 5, GREEN)
@@ -332,13 +383,13 @@ def render(st):
     return cv.img
 
 
-def timeline():
+def banner_frames():
     st = State()
     frames = []
 
     def snap(n=1):
         for _ in range(n):
-            frames.append(render(st))
+            frames.append(render_banner(st))
             st.t += 1
 
     # 1. Type the command, cursor blinking.
@@ -409,28 +460,79 @@ def timeline():
     return frames
 
 
+# Footer ----------------------------------------------------------------------
+
+FW, FH = 208, 24
+F_GROUND = FH - 2
+F_CRITTER_Y = F_GROUND - SPRITE_ROWS
+HELLO = "HI!"
+F_STOP = (FW - 23) // 2 - 8   # leaves room for the speech bubble on the right
+
+
+def draw_bubble(cv, x, y, chars, pop):
+    """Speech bubble with a tail pointing down-left at the critter."""
+    tw = text_width(HELLO)
+    w, h = tw + 6, 11
+    if pop:                                  # one frame of squash as it appears
+        x, y, w, h = x + 1, y + 1, w - 2, h - 2
+    cv.px(x + 1, y, w - 2, h, INK)
+    cv.px(x, y + 1, w, h - 2, INK)
+    cv.px(x + 1, y + 1, w - 2, h - 2, WHITE)
+    cv.px(x - 1, y + h - 2, 2, 1, INK)       # tail
+    cv.px(x - 2, y + h - 1, 2, 1, INK)
+    cv.px(x, y + h - 2, 1, 1, WHITE)
+    if not pop:
+        cv.text(HELLO[:chars], x + 3, y + 3, INK)
+
+
+def render_footer(x, pose, bubble=None):
+    cv = Canvas(FW, FH, KEY)
+    for gx in range(0, FW, 3):
+        cv.px(gx, F_GROUND, 2, 1, MUTED)
+    if pose is not None:
+        draw_critter(cv, pose, x, F_CRITTER_Y)
+    if bubble is not None:
+        draw_bubble(cv, x + 18, F_CRITTER_Y - 6 + LIFT, *bubble)
+    return cv.img
+
+
+def footer_frames():
+    frames = []
+    t = 0
+    x = -24
+
+    # Walk in from the left, looking ahead.
+    while x < F_STOP:
+        x = min(F_STOP, x + 2)
+        frames.append(render_footer(x, walk_pose(t, glow=0)))
+        t += 1
+
+    # Stop, turn to the viewer.
+    for _ in range(6):
+        frames.append(render_footer(x, Pose(left_arm="down", right_arm="down")))
+
+    # Wave hi.
+    for k in range(40):
+        bubble = (min(len(HELLO), max(0, k - 1)), k == 0)
+        frames.append(render_footer(x, wave_pose(k), bubble))
+
+    # Back to walking, off to the right.
+    for _ in range(4):
+        frames.append(render_footer(x, Pose(eyes=("open", 1, 0))))
+    while x < FW + 2:
+        x += 2
+        frames.append(render_footer(x, walk_pose(t, glow=0)))
+        t += 1
+
+    # Empty strip for a beat before the next lap.
+    for _ in range(16):
+        frames.append(render_footer(x, None))
+    return frames
+
+
 def main():
-    frames = timeline()
-    colours = set()
-    for f in frames:
-        colours.update(c for _, c in f.getcolors(W * H))
-    colours = sorted(colours)
-    assert len(colours) <= 256, len(colours)
-
-    pal = Image.new("P", (1, 1))
-    flat = [v for c in colours for v in c]
-    pal.putpalette(flat + [0] * (768 - len(flat)))
-
-    out = []
-    for f in frames:
-        q = f.quantize(palette=pal, dither=Image.Dither.NONE)
-        out.append(q.resize((W * SCALE, H * SCALE), Image.Resampling.NEAREST))
-
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    out[0].save(OUT, save_all=True, append_images=out[1:], duration=FRAME_MS,
-                loop=0, optimize=False, disposal=1)
-    print(f"{OUT}: {len(out)} frames, {len(colours)} colours, "
-          f"{OUT.stat().st_size // 1024} KB, {len(out) * FRAME_MS / 1000:.1f} s")
+    save_gif(banner_frames(), ASSETS / "banner.gif")
+    save_gif(footer_frames(), ASSETS / "footer.gif", transparent=KEY)
 
 
 if __name__ == "__main__":
